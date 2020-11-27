@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -10,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jmoiron/sqlx"
+	"github.com/kally95/garagesale/cmd/sales-api/internal/handlers"
 	"github.com/kally95/garagesale/internal/platform/database"
 )
 
@@ -34,7 +33,7 @@ func main() {
 	// =========================================================================
 	// Start API Service
 
-	ps := ProductService{db: db}
+	ps := handlers.Product{DB: db}
 
 	api := http.Server{
 		Addr:         "localhost:8000",
@@ -84,51 +83,5 @@ func main() {
 		if err != nil {
 			log.Fatalf("main : could not stop server gracefully : %v", err)
 		}
-	}
-}
-
-// Product is something we sell
-type Product struct {
-	ID          string    `db:"product_id" json:"id"`
-	Name        string    `db:"name" json:"name"`
-	Cost        int       `db:"cost" json:"cost"`
-	Quantity    int       `db:"quantity" json:"quantity"`
-	DateCreated time.Time `db:"date_created" json:"date_created"`
-	DateUpdated time.Time `db:"date_updated" json:"date_updated"`
-}
-
-// ProductService has handler methods for dealing with Products.
-type ProductService struct {
-	db *sqlx.DB
-}
-
-// List is a basic HTTP Handler.
-// If you open localhost:8000 in your browser, you may notice
-// double requets being made. This happens because the browser
-// sends a request in the background for a website favicon.
-func (p *ProductService) List(w http.ResponseWriter, r *http.Request) {
-
-	list := []Product{}
-
-	const q = `SELECT product_id, name, cost, quantity, date_updated, date_created FROM products`
-
-	if err := p.db.Select(&list, q); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Println("error querying db", err)
-		return
-	}
-
-	data, err := json.Marshal(list)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Println("error marshalling", err)
-		return
-	}
-
-	w.Header().Set("content-type", "application/json: charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-
-	if _, err := w.Write(data); err != nil {
-		log.Println("error writing", err)
 	}
 }
