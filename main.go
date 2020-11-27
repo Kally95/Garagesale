@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"log"
 	"net/http"
 	"net/url"
@@ -12,6 +13,8 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+
+	"github.com/kally95/garagesale/schema"
 	_ "github.com/lib/pq"
 )
 
@@ -25,11 +28,27 @@ func main() {
 
 	// =========================================================================
 	// Setup Dependencies
+
 	db, err := openDB()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
+
+	flag.Parse()
+	switch flag.Arg(0) {
+	case "migrate":
+		if err := schema.Migrate(db); err != nil {
+			log.Fatal(err)
+		}
+		log.Println("Migrations complete")
+	case "seed":
+		if err := schema.Seed(db); err != nil {
+			log.Fatal(err)
+		}
+		log.Println("Seed data inserted")
+	}
+
 	// =========================================================================
 	// Start API Service
 
